@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            background: linear-gradient(135deg, #6e8efb, #a777e3); /* Gradient background */
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.8); /* Glassmorphism effect - more subtle*/
+            padding: 30px;
+            border-radius: 15px; /* Slightly more rounded corners */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Deeper shadow */
+            text-align: center;
+            backdrop-filter: blur(10px); /* Add blur to the background, stronger blur */
+            border: 1px solid rgba(255, 255, 255, 0.3); /* Add a border */
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* More pronounced text shadow */
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            cursor: pointer;
+            border: 3px solid #4CAF50; /* Green border */
+            border-radius: 10px; /* Rounded corners for cells */
+            transition: all 0.2s ease; /* Smooth transition for hover effects */
+            background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow to cells */
+        }
+
+        .cell:hover {
+            background-color: rgba(255, 255, 255, 0.9); /* Slightly brighter on hover */
+            transform: scale(1.05); /* Slight scale on hover */
+            border-color: #66BB6A; /* Lighter green on hover */
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* Increased shadow on hover */
+        }
+
+        .cell.x {
+            color: #F44336; /* Red for X */
+        }
+
+        .cell.o {
+            color: #2196F3; /* Blue for O */
+        }
+
+        .reset-button {
+            padding: 12px 25px;
+            font-size: 1em;
+            background-color: #4CAF50; /* Green button */
+            color: white;
+            border: none;
+            border-radius: 10px; /* Rounded corners for button */
+            cursor: pointer;
+            transition: all 0.2s ease; /* Smooth transition for button */
+            font-family: 'Press Start 2P', cursive;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow to button */
+        }
+
+        .reset-button:hover {
+            background-color: #45a049; /* Darker green on hover */
+            transform: scale(1.05); /* Slight scale on hover */
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* Increased shadow on hover */
+        }
+
+        .reset-button:active {
+            background-color: #388E3C; /* Even darker green on active */
+            transform: scale(0.95); /* Slight scale down on active */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Smaller shadow on active */
+        }
+
+        .message {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #333;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* Subtle text shadow for message */
+        }
+
+        .winning-message {
+            color: #4CAF50; /* Green for win */
+        }
+
+        .draw-message {
+          color: #777; /* Gray for draw */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tic-Tac-Toe</h1>
+        <div class="board">
+            <div class="cell" data-cell-index="0"></div>
+            <div class="cell" data-cell-index="1"></div>
+            <div class="cell" data-cell-index="2"></div>
+            <div class="cell" data-cell-index="3"></div>
+            <div class="cell" data-cell-index="4"></div>
+            <div class="cell" data-cell-index="5"></div>
+            <div class="cell" data-cell-index="6"></div>
+            <div class="cell" data-cell-index="7"></div>
+            <div class="cell" data-cell-index="8"></div>
+        </div>
+        <div class="message"></div>
+        <button class="reset-button">Reset Game</button>
+    </div>
+
+    <script>
+        const boardElement = document.querySelector('.board');
+        const cells = document.querySelectorAll('.cell');
+        const messageElement = document.querySelector('.message');
+        const resetButton = document.querySelector('.reset-button');
+
+        let board = ['', '', '', '', '', '', '', '', ''];
+        let currentPlayer = 'X';
+        let isGameActive = true;
+
+        const winningCombinations = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6]             // Diagonals
+        ];
+
+        function handleCellClick(event) {
+            const cell = event.target;
+            const cellIndex = parseInt(cell.dataset.cellIndex);
+
+            if (board[cellIndex] !== '' || !isGameActive) {
+                return;
+            }
+
+            board[cellIndex] = currentPlayer;
+            cell.textContent = currentPlayer;
+            cell.classList.add(currentPlayer.toLowerCase()); // Add class for styling
+
+            const winner = checkWinner();
+            if (winner) {
+                displayMessage(winner === 'X' || winner === 'O' ? `${winner} wins!` : "It's a draw!");
+                isGameActive = false;
+                return;
+            }
+
+            switchPlayer();
+        }
+
+        function checkWinner() {
+            for (let combination of winningCombinations) {
+                const [a, b, c] = combination;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    cells[a].classList.add('winning-cell');
+                    cells[b].classList.add('winning-cell');
+                    cells[c].classList.add('winning-cell');
+                    return board[a];
+                }
+            }
+
+            if (!board.includes('')) {
+                return 'draw';
+            }
+
+            return null;
+        }
+
+        function switchPlayer() {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        }
+
+        function displayMessage(message) {
+            messageElement.textContent = message;
+            messageElement.classList.remove('winning-message', 'draw-message'); // Remove previous classes
+            if (message.includes('wins')) {
+                messageElement.classList.add('winning-message');
+            } else if (message.includes('draw')) {
+                messageElement.classList.add('draw-message');
+            }
+        }
+
+        function resetGame() {
+            board = ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = 'X';
+            isGameActive = true;
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('x', 'o', 'winning-cell'); // Remove classes
+            });
+            messageElement.textContent = '';
+            messageElement.classList.remove('winning-message', 'draw-message');
+        }
+
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        resetButton.addEventListener('click', resetGame);
+    </script>
+</body>
+</html>
